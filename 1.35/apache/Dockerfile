@@ -1,3 +1,23 @@
+# Multi-stage build - See https://docs.docker.com/engine/userguide/eng-image/multistage-build
+
+FROM antonmeep/dmd as dmd
+
+RUN apt-get update \
+  && apt-get install -y --no-install-recommends \
+  	git \
+	pkg-config \
+	make \
+	libcurl4-openssl-dev \
+	libsqlite3-dev \
+  && git clone https://github.com/abraunegg/onedrive.git \
+  && cd onedrive \
+  && ./configure \
+  && make \
+  && make install
+
+
+
+
 FROM php:7.4-apache
 
 # System dependencies
@@ -139,5 +159,10 @@ RUN curl -s -o /tmp/skin-minervaneue.tar.gz https://extdist.wmflabs.org/dist/ski
 
 COPY config/mediawiki/* /var/www/html/
 COPY docker-entrypoint-debian.sh /docker-entrypoint.sh
+
+COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
+
+RUN set -eux; \
+	mkdir -p /config; 
 
 ENTRYPOINT ["/docker-entrypoint.sh"]
