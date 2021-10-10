@@ -67,7 +67,10 @@ RUN set -eux; \
 	chown -R www-data:www-data /var/www/data
 
 # Version
-ENV MEDIAWIKI_MAJOR_VERSION 1.31
+ENV MEDIAWIKI_VERSION_MAJOR 1
+ENV MEDIAWIKI_VERSION_MINOR 31
+ENV MEDIAWIKI_VERSION_PATCH 16
+ENV MEDIAWIKI_VERSION_MAIN 1.31
 ENV MEDIAWIKI_VERSION 1.31.16
 
 # MediaWiki setup
@@ -79,8 +82,8 @@ RUN set -eux; \
 	apt-get update; \
 	apt-get install -y --no-install-recommends $fetchDeps; \
 	\
-	curl -fSL "https://releases.wikimedia.org/mediawiki/${MEDIAWIKI_MAJOR_VERSION}/mediawiki-${MEDIAWIKI_VERSION}.tar.gz" -o mediawiki.tar.gz; \
-	curl -fSL "https://releases.wikimedia.org/mediawiki/${MEDIAWIKI_MAJOR_VERSION}/mediawiki-${MEDIAWIKI_VERSION}.tar.gz.sig" -o mediawiki.tar.gz.sig; \
+	curl -fSL "https://releases.wikimedia.org/mediawiki/${MEDIAWIKI_VERSION_MAIN}/mediawiki-${MEDIAWIKI_VERSION}.tar.gz" -o mediawiki.tar.gz; \
+	curl -fSL "https://releases.wikimedia.org/mediawiki/${MEDIAWIKI_VERSION_MAIN}/mediawiki-${MEDIAWIKI_VERSION}.tar.gz.sig" -o mediawiki.tar.gz.sig; \
 	export GNUPGHOME="$(mktemp -d)"; \
 # gpg key from https://www.mediawiki.org/keys/keys.txt
 	gpg --batch --keyserver keyserver.ubuntu.com --recv-keys \
@@ -97,6 +100,27 @@ RUN set -eux; \
 	\
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $fetchDeps; \
 	rm -rf /var/lib/apt/lists/*
+
+RUN set -eux; \
+	apt-get update; \
+	apt-get install -y --no-install-recommends \
+        libzip-dev \
+        zip \
+  && docker-php-ext-install zip 
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
+RUN set -eux; \
+	cd /var/www/html; \
+	composer require mediawiki/sub-page-list 
+
+RUN curl -s -o /tmp/extension-mobilefrontend.tar.gz https://extdist.wmflabs.org/dist/extensions/MobileFrontend-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-`curl -s https://extdist.wmflabs.org/dist/extensions/ | grep -o -P "(?<=MobileFrontend-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-)[0-9a-z]{7}(?=.tar.gz)" | head -1`.tar.gz && \
+    tar -xzf /tmp/extension-mobilefrontend.tar.gz -C /var/www/html/extensions && \
+    rm /tmp/extension-mobilefrontend.tar.gz
+
+RUN curl -s -o /tmp/skin-minervaneue.tar.gz https://extdist.wmflabs.org/dist/skins/MinervaNeue-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-`curl -s https://extdist.wmflabs.org/dist/skins/ | grep -o -P "(?<=MinervaNeue-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-)[0-9a-z]{7}(?=.tar.gz)" | head -1`.tar.gz && \
+    tar -xzf /tmp/skin-minervaneue.tar.gz -C /var/www/html/skins && \
+    rm /tmp/skin-minervaneue.tar.gz
 
 COPY config/mediawiki/* /var/www/html/
 COPY docker-entrypoint-debian.sh /docker-entrypoint.sh

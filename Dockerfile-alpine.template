@@ -85,6 +85,10 @@ RUN set -eux; \
 	\
 	apk del .fetch-deps
 
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
+
 COPY config/mediawiki/* /var/www/html/
 
 CMD ["%%CMD%%"]

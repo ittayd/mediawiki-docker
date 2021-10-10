@@ -57,8 +57,8 @@ RUN set -eux; \
 	chown -R www-data:www-data /var/www/data
 
 # Version
-ENV MEDIAWIKI_MAJOR_VERSION 1.36
-ENV MEDIAWIKI_VERSION 1.36.2
+ENV MEDIAWIKI_MAJOR_VERSION %%MEDIAWIKI_MAJOR_VERSION%%
+ENV MEDIAWIKI_VERSION %%MEDIAWIKI_VERSION%%
 
 # MediaWiki setup
 RUN set -eux; \
@@ -84,6 +84,10 @@ RUN set -eux; \
 	chown -R www-data:www-data extensions skins cache images; \
 	\
 	apk del .fetch-deps
+
+
+COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
+
 
 COPY config/mediawiki/* /var/www/html/
 

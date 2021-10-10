@@ -61,9 +61,11 @@ for mediawikiRelease in "${mediawikiReleases[@]}"; do
 				;;
 		esac
 
+ 		IFS=. read major minor patch <<< "$mediawikiVersion"
 		sed -r \
-			-e 's!%%MEDIAWIKI_VERSION%%!'"$mediawikiVersion"'!g' \
-			-e 's!%%MEDIAWIKI_MAJOR_VERSION%%!'"$mediawikiRelease"'!g' \
+			-e 's!%%MEDIAWIKI_VERSION_MAJOR%%!'"$major"'!g' \
+			-e 's!%%MEDIAWIKI_VERSION_MINOR%%!'"$minor"'!g' \
+			-e 's!%%MEDIAWIKI_VERSION_PATCH%%!'"$patch"'!g' \
 			-e 's!%%PHP_VERSION%%!'"$phpVersion"'!g' \
 			-e 's!%%VARIANT%%!'"$variant"'!g' \
 			-e 's!%%APCU_VERSION%%!'"${peclVersions[APCu]}"'!g' \
