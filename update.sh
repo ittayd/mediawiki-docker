@@ -32,7 +32,7 @@ declare -A variantExtras=(
 	[fpm-alpine]=''
 )
 declare -A variantCmds=(
-	[apache]='apache2-foreground'
+	[apache]='/docker-entrypoint.sh'
 	[fpm]='php-fpm'
 	[fpm-alpine]='php-fpm'
 )

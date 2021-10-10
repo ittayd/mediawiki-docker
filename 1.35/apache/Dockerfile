@@ -113,4 +113,7 @@ RUN set -eux; \
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $fetchDeps; \
 	rm -rf /var/lib/apt/lists/*
 
-CMD ["apache2-foreground"]
+COPY config/mediawiki/* /var/www/html/
+COPY docker-entrypoint-debian.sh /docker-entrypoint.sh
+
+ENTRYPOINT ["/docker-entrypoint.sh"]

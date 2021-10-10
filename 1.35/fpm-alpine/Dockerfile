@@ -85,4 +85,6 @@ RUN set -eux; \
 	\
 	apk del .fetch-deps
 
+COPY config/mediawiki/* /var/www/html/
+
 CMD ["php-fpm"]
