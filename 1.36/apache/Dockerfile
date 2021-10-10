@@ -161,8 +161,11 @@ COPY config/mediawiki/* /var/www/html/
 COPY docker-entrypoint-debian.sh /docker-entrypoint.sh
 
 COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
-
 RUN set -eux; \
-	mkdir -p /config; 
+	mkdir -p ~/.config/; \
+	mkdir -p ~/OneDrive/MediawikiBackup; \
+	ln -s /var/www/data ~/OneDrive/MediawikiBackup/data
+
+COPY config/onedrive/* /root/.config/onedrive/
 
 ENTRYPOINT ["/docker-entrypoint.sh"]

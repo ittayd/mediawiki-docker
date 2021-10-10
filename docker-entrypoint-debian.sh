@@ -14,8 +14,15 @@ FILE=/var/www/html/LocalSettings.php
     fi
 }) &
 
+# turn on or off verbose logging
+if [ "$DEBUG" = "1" ]; then
+  VERBOSE=true
+else
+  VERBOSE=false
+fi
+
 # check a refresh token exists
-if [ -f /config/refresh_token ]; then
+if [ -f ~/.config/onedrive/refresh_token ]; then
   echo "Found onedrive refresh token..."
 else
   echo
@@ -27,11 +34,13 @@ else
   if [ -t 0 ] ; then
     echo "-------------------------------------"
     echo
+    onedrive --verbose=${VERBOSE} --synchronize
+    exit 0
   else
     echo
     echo "Please re-start start the container in interactive mode using the -it flag:"
     echo
-    echo "docker run -it -v /local/config/path:/config -v /local/documents/path:/documents oznu/onedrive"
+    echo "docker run -it $(hostname)"
     echo
     echo "Once authorized you can re-create container with interactive mode disabled."
     echo "-------------------------------------"
@@ -41,16 +50,10 @@ else
 
 fi
 
-# turn on or off verbose logging
-if [ "$DEBUG" = "1" ]; then
-  VERBOSE=true
-else
-  VERBOSE=false
-fi
 
 echo "Starting onedrive client..."
 
-onedrive --single-directory Mediawiki --syncdir=/var/www/data --verbose=${VERBOSE} --monitor
+onedrive --verbose=${VERBOSE} --monitor &
 
-echo "Starting Apache"
+echo "Starting Apache..."
 apache2-foreground
