@@ -34,7 +34,7 @@ else
   if [ -t 0 ] ; then
     echo "-------------------------------------"
     echo
-    onedrive --verbose=${VERBOSE} --synchronize
+    onedrive --verbose=${VERBOSE} --single-directory MediawikiBackup --synchronize
     exit 0
   else
     echo
@@ -53,7 +53,7 @@ fi
 
 echo "Starting onedrive client..."
 
-onedrive --verbose=${VERBOSE} --monitor &
+onedrive --verbose=${VERBOSE} --single-directory MediawikiBackup --monitor > /var/log/onedrive/console.log-.log 2>&1 &
 
 echo "Starting Apache..."
-apache2-foreground
+apache2-foreground > /var/log/apache2/console.log 2>&1

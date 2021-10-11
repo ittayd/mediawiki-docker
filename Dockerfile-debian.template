@@ -149,6 +149,7 @@ COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
 RUN set -eux; \
 	mkdir -p ~/.config/; \
 	mkdir -p ~/OneDrive/MediawikiBackup; \
+	mkdir -p /var/log/onedrive; \
 	ln -s /var/www/data ~/OneDrive/MediawikiBackup/data
 
 COPY config/onedrive/* /root/.config/onedrive/
