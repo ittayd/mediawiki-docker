@@ -1,0 +1,54 @@
+#!/usr/bin/with-contenv bash
+
+export ROOT=/home/www-data
+
+
+function onedrive() {
+  # turn on or off verbose logging
+  if [ "$DEBUG" = "1" ]; then
+    VERBOSE="-vvvv"
+  fi
+
+  exec su -l www-data -s $(which onedrive) -- $VERBOSE --confdir=$ROOT/.config/onedrive --syncdir=$ROOT/OneDrive --single-directory MediawikiBackup "$@"
+}
+
+function check() {
+  echo "Checking for refresh token..."
+  # check a refresh token exists
+  if [ -f $ROOT/.config/onedrive/refresh_token ]; then 
+    echo "Found onedrive refresh token..."
+  else
+    echo
+    echo "-------------------------------------"
+    echo "ONEDRIVE LOGIN REQUIRED"
+    echo "-------------------------------------"
+    echo "To use this container you must authorize the OneDrive Client."
+
+    if [ -t 0 ] ; then
+      echo "-------------------------------------"
+      echo
+      onedrive --synchronize
+    else
+      echo
+      echo "Please re-start start the container in interactive mode using the -it flag:"
+      echo
+      echo "docker run -it $(hostname)"
+      echo
+      echo "Once authorized you can re-create container with interactive mode disabled."
+      echo "-------------------------------------"
+      echo
+      exit 1
+    fi
+
+  fi
+}
+
+if [ "$1" = "check" ]; then
+  check
+  echo "DONE"
+  exit $?
+fi
+
+echo "Starting onedrive client..."
+
+onedrive --monitor 

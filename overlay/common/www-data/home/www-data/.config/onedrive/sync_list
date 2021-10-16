@@ -3,5 +3,5 @@
 !/MediawikiBackup/data/*jobqueue.sqlite*
 
 # Just sync the mediawiki backup folder
-/MediawikiBackup
+/MediawikiBackup/*
 
