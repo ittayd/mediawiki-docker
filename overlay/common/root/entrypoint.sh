@@ -2,6 +2,6 @@
 
 /bin/bash /etc/services.d/onedrive/run check || exit 1
 
-/backup.sh -- restore
+/backup.sh restore
 
 exec /init
