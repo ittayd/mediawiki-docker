@@ -12,6 +12,9 @@ if ($ini['smtp_user'] == 'foo@bar.com') {
 # need to be to an IP that is used to externally reach the container. if 127.0.0.1 is used, it will resolve internally and will not work
 #$wgServer = "http://192.168.2.116:8080";
 
+$wgEmergencyContact = $ini['smtp_user'];
+$wgPasswordSender = $ini['smtp_user'];
+
 $wgSMTP = [                                                                             
     'host' => 'ssl://smtp.gmail.com', // hostname of the email server                   
     'IDHost' => 'gmail.com',                                                            
@@ -30,6 +33,7 @@ $GLOBALS['egSPLAutorefresh'] = true;
 $wgDefaultSkin = 'timeless';
 # $wgDefaultSkin = 'minerva'; # if minerva fixes the bugs of no edit action on the main page and no suggestions to create page on no search results, then uncomment this and comment the next line
 $wgMFDefaultSkinClass = 'SkinMinerva'; 
+$wgMFAutodetectMobileView = true;
 
 $wgCacheDirectory = "$IP/cache";
 
