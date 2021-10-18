@@ -52,7 +52,7 @@ RUN set -eux; \
 		# Required for SyntaxHighlighting
 		python3 \
 		cron \
-		rsyslog
+		rsyslog \
 	; \
 	rm -rf /var/lib/apt/lists/*
 
@@ -171,7 +171,7 @@ COPY overlay/common/root/ /
 COPY overlay/debian/root/ /
 
 RUN set -eux; \
-	chmod 0744 /etc/services.d/*/run /etc/services.d/*/finish \
+	chmod 0744 /etc/services.d/*/run /etc/services.d/*/finish; \
 	chmod 0600 /etc/cron.d/backup 
 
 

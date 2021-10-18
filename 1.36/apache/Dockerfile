@@ -52,6 +52,7 @@ RUN set -eux; \
 		# Required for SyntaxHighlighting
 		python3 \
 		cron \
+		rsyslog \
 	; \
 	rm -rf /var/lib/apt/lists/*
 
@@ -183,6 +184,11 @@ COPY --chown=www-data:www-data overlay/common/www-data/ /
 
 COPY overlay/common/root/ /
 COPY overlay/debian/root/ /
+
+RUN set -eux; \
+	chmod 0744 /etc/services.d/*/run /etc/services.d/*/finish; \
+	chmod 0600 /etc/cron.d/backup 
+
 
 COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
 

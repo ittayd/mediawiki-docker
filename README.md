@@ -1,8 +1,9 @@
 Do not edit the `Dockerfile`s directly. Changes should be made in the `Dockerfile-*.template` files and applied by running `update.sh`.
 
-After building the image, run it with -it, it needs to get a onedrive token interactively. Also, port forward, if needed, to port 80.
-
-Copy and edit .\overlay\common\www-data\var\www\html\ExtraLocalConfig.ini, then `docker cp ExtraLocalConfig.ini mediawiki:/var/www/html/`
+After building the image, run it with -it, it needs to:
+* ask for username & password to send emails through google
+* get a onedrive token interactively. 
+Also, port forward, if needed, to port 80. 
 
 The SQLite database is copied every night at 2:00 to a folder under /home/www-data/OneDrive and synced to onedrive.
 

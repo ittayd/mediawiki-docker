@@ -3,4 +3,12 @@
 # this line here is what we should have to get rid of the hard link error
 touch /etc/crontab /etc/cron.*/*
 
+mkfifo /tmp/stdout /tmp/stderr
+chmod 0666 /tmp/stdout /tmp/stderr
+
+# Have the main Docker process tail the files to produce stdout and stderr 
+# for the main process that Docker will actually show in docker logs.
+tail -f /tmp/stdout &
+tail -f /tmp/stderr >&2 &
+
 exec cron -f
