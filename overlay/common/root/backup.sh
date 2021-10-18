@@ -1,9 +1,10 @@
 #! /bin/bash
 
+WIKI_ROOT=/var/www/html
 BACKUP=/home/www-data/OneDrive/MediawikiBackup/data/my_wiki.sqlite
 
 function backup() {
-    /usr/local/bin/php maintenance/SqliteMaintenance.php --backup-to $BACKUP
+    /usr/local/bin/php $WIKI_ROOT/maintenance/SqliteMaintenance.php --backup-to $BACKUP
 }
 
 function restore() {
