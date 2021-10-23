@@ -27,7 +27,8 @@ function check() {
     if [ -t 0 ] ; then
       echo "-------------------------------------"
       echo
-      onedrive --synchronize
+      [ -z "$SKIP_ONEDRIVE_INITIAL_SYNC" ] || SYNC=--synchronize
+      onedrive $SYNC
     else
       echo
       echo "Please re-start start the container in interactive mode using the -it flag:"

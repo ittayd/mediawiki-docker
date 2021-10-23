@@ -46,11 +46,13 @@ RUN set -eux; \
 	\
 	apt-get update; \
 	apt-get install -y --no-install-recommends \
+		certbot \
 		git \
 		librsvg2-bin \
 		imagemagick \
 		# Required for SyntaxHighlighting
 		python3 \
+		python3-certbot-apache \
 		cron \
 		rsyslog \
 	; \
@@ -65,6 +67,8 @@ RUN set -eux; \
 	apt-get install -y --no-install-recommends \
 		libicu-dev \
 		libonig-dev \
+		libzip-dev \
+        zip \
 	; \
 	\
 	docker-php-ext-install -j "$(nproc)" \
@@ -72,6 +76,7 @@ RUN set -eux; \
 		mbstring \
 		mysqli \
 		opcache \
+		zip \
 	; \
 	\
 	pecl install APCu-5.1.20; \
@@ -140,16 +145,10 @@ RUN set -eux; \
 	gpgconf --kill all; \
 	rm -r "$GNUPGHOME" mediawiki.tar.gz.sig mediawiki.tar.gz; \
 	chown -R www-data:www-data extensions skins cache images; \
+	a2enmod ssl; \
 	\
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $fetchDeps; \
 	rm -rf /var/lib/apt/lists/*
-
-RUN set -eux; \
-	apt-get update; \
-	apt-get install -y --no-install-recommends \
-        libzip-dev \
-        zip \
-  && docker-php-ext-install zip 
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
@@ -171,6 +170,7 @@ COPY overlay/common/root/ /
 COPY overlay/debian/root/ /
 
 RUN set -eux; \
+	echo "Include /etc/apache2/mediawiki.conf" >> /etc/apache2/apache2.conf; \
 	chmod 0744 /etc/services.d/*/run /etc/services.d/*/finish; \
 	chmod 0600 /etc/cron.d/backup 
 
