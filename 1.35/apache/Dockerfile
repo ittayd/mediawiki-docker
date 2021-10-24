@@ -4,6 +4,8 @@ ARG PHP_VARIANT=apache
 # Set vars for s6 overlay
 ARG S6_OVERLAY_VERSION=v2.2.0.3
 ARG S6_OVERLAY_BASE_URL=https://github.com/just-containers/s6-overlay/releases/download/${S6_OVERLAY_VERSION}
+ARG SOCKLOG_OVERLAY_VERSION=v3.1.2-0
+ARG SOCKLOG_OVERLAY_BASE_URL=https://github.com/just-containers/socklog-overlay/releases/download/${SOCKLOG_OVERLAY_VERSION}
 
 # Multi-stage build - See https://docs.docker.com/engine/userguide/eng-image/multistage-build
 
@@ -27,19 +29,27 @@ FROM php:${PHP_VERSION}-${PHP_VARIANT} as php-armv7
 ARG S6_OVERLAY_VERSION
 ARG S6_OVERLAY_BASE_URL
 ENV S6_OVERLAY_RELEASE="${S6_OVERLAY_BASE_URL}/s6-overlay-arm.tar.gz"
+ARG SOCKLOG_OVERLAY_BASE_URL
+ENV SOCKLOG_OVERLAY_RELEASE="${SOCKLOG_OVERLAY_BASE_URL}/socklog-overlay-arm.tar.gz"
 
 FROM php:${PHP_VERSION}-${PHP_VARIANT} as php-amd64
 
-ARG S6_OVERLAY_VERSION
 ARG S6_OVERLAY_BASE_URL
 ENV S6_OVERLAY_RELEASE="${S6_OVERLAY_BASE_URL}/s6-overlay-amd64.tar.gz"
+ARG SOCKLOG_OVERLAY_VERSION
+ARG SOCKLOG_OVERLAY_BASE_URL
+ENV SOCKLOG_OVERLAY_RELEASE="${SOCKLOG_OVERLAY_BASE_URL}/socklog-overlay-amd64.tar.gz"
 
 FROM php-${TARGETARCH:-amd64}${TARGETVARIANT}
 
-ADD ${S6_OVERLAY_RELEASE} /tmp/s6overlay.tar.gz
-
+ADD ${S6_OVERLAY_RELEASE} /tmp/s6-overlay.tar.gz
 RUN set -eux; \
-    tar xzf /tmp/s6overlay.tar.gz -C / 
+    tar xzf /tmp/s6-overlay.tar.gz -C /
+
+# Install socklog-overlay
+ADD ${SOCKLOG_OVERLAY_RELEASE} /tmp/socklog-overlay.tar.gz
+RUN set -eux; \
+	tar xzf /tmp/socklog-overlay.tar.gz -C / 
 
 # System dependencies
 RUN set -eux; \
@@ -54,7 +64,6 @@ RUN set -eux; \
 		python3 \
 		python3-certbot-apache \
 		cron \
-		rsyslog \
 	; \
 	rm -rf /var/lib/apt/lists/*
 
@@ -192,4 +201,4 @@ RUN set -eux; \
 
 COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
 
-ENTRYPOINT ["/entrypoint.sh"]
+ENTRYPOINT ["/overlay/bin/entrypoint.sh"]

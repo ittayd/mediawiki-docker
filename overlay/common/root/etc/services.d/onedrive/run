@@ -12,7 +12,7 @@ function onedrive() {
   exec su -l www-data -s $(which onedrive) -- $VERBOSE --confdir=$ROOT/.config/onedrive --syncdir=$ROOT/OneDrive --single-directory MediawikiBackup "$@"
 }
 
-function check() {
+function setup() {
   echo "Checking for refresh token..."
   # check a refresh token exists
   if [ -f $ROOT/.config/onedrive/refresh_token ]; then 
@@ -27,8 +27,8 @@ function check() {
     if [ -t 0 ] ; then
       echo "-------------------------------------"
       echo
-      [ -z "$SKIP_ONEDRIVE_INITIAL_SYNC" ] || SYNC=--synchronize
-      onedrive $SYNC
+      [ -z "$SKIP_ONEDRIVE_INITIAL_SYNC" ] && SYNC=--synchronize
+      (onedrive $SYNC)
     else
       echo
       echo "Please re-start start the container in interactive mode using the -it flag:"
@@ -44,12 +44,12 @@ function check() {
   fi
 }
 
-if [ "$1" = "check" ]; then
-  check
+if [ "$1" = "setup" ]; then
+  setup
+  EC=$?
   echo "DONE"
-  exit $?
+  return $EC
 fi
 
 echo "Starting onedrive client..."
-
 onedrive --monitor 

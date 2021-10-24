@@ -11,7 +11,9 @@ LimitRequestBody 220200960
   </VirtualHost>
 
   <VirtualHost *:443>
+    AllowEncodedSlashes NoDecode
     SSLEngine on
+    ServerName ${SERVER_DOMAIN}
     SSLCertificateFile /etc/apache2/ssl.crt
     SSLCertificateKeyFile /etc/apache2/ssl.key
 #    SSLCertificateChainFile /etc/apache2/ssl.bundle.crt
@@ -67,3 +69,4 @@ LimitRequestBody 220200960
 <Directory /var/www/html/tests/qunit/>
   Allow from all
 </Directory>
+

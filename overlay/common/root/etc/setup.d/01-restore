@@ -1,0 +1,3 @@
+#!/bin/bash
+
+. /overlay/bin/backup.sh restore || [ -n "$SKIP_ONEDRIVE_INITIAL_SYNC" ]

@@ -1,0 +1,3 @@
+#!/bin/bash
+
+. /etc/services.d/onedrive/run setup

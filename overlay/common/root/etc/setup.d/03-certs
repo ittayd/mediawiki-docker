@@ -1,0 +1,36 @@
+#!/bin/bash
+
+CERT_FILE=$(grep SSLCertificateFile /etc/apache2/mediawiki.conf.tpl  | awk '{print $2}')
+if [ ! -e "$CERT_FILE" ]; then
+    [ -z "$SERVER_DOMAIN" ] && read -r -p "Enter the server domain: " SERVER_DOMAIN
+    export SERVER_DOMAIN
+    cat <<-EOF > /etc/apache2/ssl.csr
+	[req]
+	default_bits = 4096
+	default_md = sha256
+	distinguished_name = req_distinguished_name
+	x509_extensions = v3_req
+	prompt = no
+	[req_distinguished_name]
+	C = US
+	ST = VA
+	L = SomeCity
+	O = MyCompany
+	OU = MyDivision
+	CN = $SERVER_DOMAIN
+	[v3_req]
+	extendedKeyUsage = serverAuth
+EOF
+
+    # needed since certbot doesn't understand environment variables in the file...
+    eval "cat <<EOF
+$(</etc/apache2/mediawiki.conf.tpl)
+EOF
+" 2> /dev/null > /etc/apache2/mediawiki.conf
+
+    openssl req -new -nodes -x509 -days 36500 -keyout /etc/apache2/ssl.key -out /etc/apache2/ssl.crt -config /etc/apache2/ssl.csr
+
+    if [ -z "$SELF_SIGNED_CERT" ]; then 
+        . /overlay/bin/certbot.sh setup
+    fi
+fi

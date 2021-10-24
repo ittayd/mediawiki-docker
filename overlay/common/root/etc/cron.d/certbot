@@ -1,0 +1,1 @@
+0 1 * * * root /overlay/bin/certbot.sh renew > /tmp/stdout 2> /tmp/stderr
