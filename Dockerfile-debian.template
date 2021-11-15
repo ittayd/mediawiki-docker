@@ -161,22 +161,6 @@ RUN set -eux; \
 
 COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
 
-RUN set -eux; \
-	   cd /var/www/html \
-	&& echo "Installing SubPageList" \
-	&& composer require mediawiki/sub-page-list \
-	&& echo "Installing MobileFrontend" \
-	&& curl -s -o /tmp/extension-mobilefrontend.tar.gz https://extdist.wmflabs.org/dist/extensions/MobileFrontend-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-`curl -s https://extdist.wmflabs.org/dist/extensions/ | grep -o -P "(?<=MobileFrontend-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-)[0-9a-z]{7}(?=.tar.gz)" | head -1`.tar.gz \
-    && tar -xzf /tmp/extension-mobilefrontend.tar.gz -C /var/www/html/extensions \
-    && rm /tmp/extension-mobilefrontend.tar.gz \
-	&& echo "Installing MinervaNeue" \
-	&& curl -s -o /tmp/skin-minervaneue.tar.gz https://extdist.wmflabs.org/dist/skins/MinervaNeue-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-`curl -s https://extdist.wmflabs.org/dist/skins/ | grep -o -P "(?<=MinervaNeue-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-)[0-9a-z]{7}(?=.tar.gz)" | head -1`.tar.gz \
-    && tar -xzf /tmp/skin-minervaneue.tar.gz -C /var/www/html/skins \
-    && rm /tmp/skin-minervaneue.tar.gz \
-	&& echo "Installing https://github.com/Universal-Omega/DynamicPageList3" \
-    && mkdir -p /var/www/html/extensions/DynamicPageList \
-    && curl -Ls https://github.com/Universal-Omega/DynamicPageList3/archive/refs/tags/3.3.7.tar.gz | tar xz --strip=1 -C /var/www/html/extensions/DynamicPageList 
-
 COPY --chown=www-data:www-data overlay/common/www-data/ /
 
 COPY overlay/common/root/ /
@@ -189,5 +173,16 @@ RUN set -eux; \
 
 
 COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
+
+RUN set -eux; \
+	   cd /var/www/html \
+	&& echo "Installing SubPageList" \
+	&& composer require mediawiki/sub-page-list \
+	&& /install/bin/extension.sh MobileFrontend \
+	&& /install/bin/extension.sh MinervaNeue \
+	&& echo "Installing DynamicPageList3" \
+    && mkdir -p /var/www/html/extensions/DynamicPageList \
+    && curl -Ls https://github.com/Universal-Omega/DynamicPageList3/archive/refs/tags/3.3.7.tar.gz | tar xz --strip=1 -C /var/www/html/extensions/DynamicPageList 
+
 
 ENTRYPOINT ["/overlay/bin/entrypoint.sh"]
