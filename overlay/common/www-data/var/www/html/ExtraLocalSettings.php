@@ -37,6 +37,8 @@ $wgDefaultSkin = 'timeless';
 $wgMFDefaultSkinClass = 'SkinMinerva'; 
 $wgMFAutodetectMobileView = true;
 
+$wgCheckFileExtensions = false;
+
 $wgCacheDirectory = "$IP/cache";
 
 #$wgDebugLogFile = "/var/log/mediawiki/debug-{$wgDBname}.log";                                                                                                                
