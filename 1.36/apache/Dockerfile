@@ -44,12 +44,15 @@ FROM php-${TARGETARCH:-amd64}${TARGETVARIANT}
 
 ADD ${S6_OVERLAY_RELEASE} /tmp/s6-overlay.tar.gz
 RUN set -eux; \
-    tar xzf /tmp/s6-overlay.tar.gz -C /
+    tar xzf /tmp/s6-overlay.tar.gz -C / ; \
+	rm /tmp/s6-overlay.tar.gz
+
 
 # Install socklog-overlay
 ADD ${SOCKLOG_OVERLAY_RELEASE} /tmp/socklog-overlay.tar.gz
 RUN set -eux; \
-	tar xzf /tmp/socklog-overlay.tar.gz -C / 
+	tar xzf /tmp/socklog-overlay.tar.gz -C / ; \
+	rm /tmp/socklog-overlay.tar.gz
 
 # System dependencies
 RUN set -eux; \
@@ -141,9 +144,9 @@ RUN set -eux; \
 # Version
 ENV MEDIAWIKI_VERSION_MAJOR 1
 ENV MEDIAWIKI_VERSION_MINOR 36
-ENV MEDIAWIKI_VERSION_PATCH 2
+ENV MEDIAWIKI_VERSION_PATCH 3
 ENV MEDIAWIKI_VERSION_MAIN 1.36
-ENV MEDIAWIKI_VERSION 1.36.2
+ENV MEDIAWIKI_VERSION 1.36.3
 
 # MediaWiki setup
 RUN set -eux; \
@@ -165,28 +168,16 @@ RUN set -eux; \
 		1D98867E82982C8FE0ABC25F9B69B3109D3BB7B0 \
 	; \
 	gpg --batch --verify mediawiki.tar.gz.sig mediawiki.tar.gz; \
-	tar -x --strip-components=1 -f mediawiki.tar.gz; \
+	su -s /bin/tar www-data -- -x --strip-components=1 -f mediawiki.tar.gz; \
 	gpgconf --kill all; \
 	rm -r "$GNUPGHOME" mediawiki.tar.gz.sig mediawiki.tar.gz; \
-	chown -R www-data:www-data extensions skins cache images; \
+	# chown -R www-data:www-data extensions skins cache images; \
 	a2enmod ssl; \
 	\
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $fetchDeps; \
 	rm -rf /var/lib/apt/lists/*
 
-COPY --from=composer:latest /usr/bin/composer /usr/local/bin/composer
-
-RUN set -eux; \
-	cd /var/www/html; \
-	composer require mediawiki/sub-page-list 
-
-RUN curl -s -o /tmp/extension-mobilefrontend.tar.gz https://extdist.wmflabs.org/dist/extensions/MobileFrontend-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-`curl -s https://extdist.wmflabs.org/dist/extensions/ | grep -o -P "(?<=MobileFrontend-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-)[0-9a-z]{7}(?=.tar.gz)" | head -1`.tar.gz && \
-    tar -xzf /tmp/extension-mobilefrontend.tar.gz -C /var/www/html/extensions && \
-    rm /tmp/extension-mobilefrontend.tar.gz
-
-RUN curl -s -o /tmp/skin-minervaneue.tar.gz https://extdist.wmflabs.org/dist/skins/MinervaNeue-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-`curl -s https://extdist.wmflabs.org/dist/skins/ | grep -o -P "(?<=MinervaNeue-REL${MEDIAWIKI_VERSION_MAJOR}_${MEDIAWIKI_VERSION_MINOR}-)[0-9a-z]{7}(?=.tar.gz)" | head -1`.tar.gz && \
-    tar -xzf /tmp/skin-minervaneue.tar.gz -C /var/www/html/skins && \
-    rm /tmp/skin-minervaneue.tar.gz
+COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
 
 COPY --chown=www-data:www-data overlay/common/www-data/ /
 
@@ -200,5 +191,16 @@ RUN set -eux; \
 
 
 COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
+
+RUN set -eux; \
+	   cd /var/www/html \
+	&& ls -la \   
+	&& /install/bin/extension.sh SubPageList composer mediawiki/sub-page-list \
+	&& /install/bin/extension.sh MobileFrontend extensions \
+	&& /install/bin/extension.sh MinervaNeue skins \
+	&& /install/bin/extension.sh DataTable2 extensions \
+	&& /install/bin/extension.sh DynamicPageList targz https://github.com/Universal-Omega/DynamicPageList3/archive/refs/tags/3.3.7.tar.gz \
+	&& /install/bin/extension.sh Widgets extensions \
+	&& /install/bin/extension.sh IFrameTag composer mediawiki/iframe-tag
 
 ENTRYPOINT ["/overlay/bin/entrypoint.sh"]
