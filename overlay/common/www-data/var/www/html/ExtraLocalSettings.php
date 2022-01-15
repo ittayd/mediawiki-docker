@@ -41,6 +41,8 @@ $wgCheckFileExtensions = false;
 
 $wgCacheDirectory = "$IP/cache";
 
+$wgExtensionCredits['parserhook']['Scribunto'] = true; # hack to make DataTable2 register its Lua function.
+
 #$wgDebugLogFile = "/var/log/mediawiki/debug-{$wgDBname}.log";                                                                                                                
 #$wgShowExceptionDetails = true;
 #$wgMainCacheType = CACHE_NONE;
