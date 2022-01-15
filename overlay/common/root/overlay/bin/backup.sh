@@ -11,9 +11,10 @@ IMAGES=$WIKI_ROOT/images
 PHP=/usr/local/bin/php
 
 function backup() {
+    echo "$(date) Running backup"
     $PHP $WIKI_ROOT/maintenance/SqliteMaintenance.php --backup-to $DB_BACKUP
     [ ! -e $IMAGES_BACKUP ] && mkdir $IMAGES_BACKUP
-    $PHP $WIKI_ROOT/maintenance/dumpUploads.php | xargs cp -u -t $IMAGES_BACKUP
+    $PHP $WIKI_ROOT/maintenance/dumpUploads.php | xargs realpath | su -s /usr/bin/xargs www-data -- cp -a -s -u -t $IMAGES_BACKUP
 }
 
 function wait_file() {
