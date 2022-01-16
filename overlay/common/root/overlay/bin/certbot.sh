@@ -9,6 +9,7 @@ function setup() {
 }
 
 function renew() {
+    echo "$(date) Renew certificate"
     certbot -n renew
 }
 
