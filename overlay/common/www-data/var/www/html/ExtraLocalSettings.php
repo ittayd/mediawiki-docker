@@ -43,6 +43,12 @@ $wgCacheDirectory = "$IP/cache";
 
 $wgExtensionCredits['parserhook']['Scribunto'] = true; # hack to make DataTable2 register its Lua function.
 
+$wgUploadPath = "$wgScriptPath/img_auth.php";
+$wgUploadDirectory = '/var/www/html/../images';
+$wgEnableUploads = true;
+# We don't wanna restrict access, just make our MW install more secure
+$wgWhitelistRead = false;
+
 #$wgDebugLogFile = "/var/log/mediawiki/debug-{$wgDBname}.log";                                                                                                                
 #$wgShowExceptionDetails = true;
 #$wgMainCacheType = CACHE_NONE;

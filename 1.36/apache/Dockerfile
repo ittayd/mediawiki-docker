@@ -9,20 +9,24 @@ ARG SOCKLOG_OVERLAY_BASE_URL=https://github.com/just-containers/socklog-overlay/
 
 # Multi-stage build - See https://docs.docker.com/engine/userguide/eng-image/multistage-build
 
-FROM antonmeep/dmd as dmd
+# Based on https://github.com/abraunegg/onedrive/blob/master/contrib/docker/Dockerfile-stretch, 
+# PHP is based on debian:bullseye-slim (https://github.com/docker-library/docs/blob/master/php/README.md#supported-tags-and-respective-dockerfile-links)
+FROM debian:stable-slim AS onedrive 
 
-RUN apt-get update \
-  && apt-get install -y --no-install-recommends \
-  	git \
-	pkg-config \
-	make \
-	libcurl4-openssl-dev \
-	libsqlite3-dev \
-  && git clone https://github.com/abraunegg/onedrive.git \
-  && cd onedrive \
-  && ./configure \
-  && make \
-  && make install
+RUN apt update && \
+    apt install -y build-essential curl libcurl4-openssl-dev libsqlite3-dev pkg-config git wget
+
+RUN wget http://downloads.dlang.org/releases/2.x/2.097.0/dmd_2.097.0-0_${TARGETARCH:-amd64}.deb -O /tmp/dmd.deb && \
+    dpkg -i /tmp/dmd.deb && \
+	rm -f /tmp/dmd.deb
+
+RUN git clone --depth 1 --branch v2.4.15 https://github.com/abraunegg/onedrive.git
+
+RUN cd onedrive && \
+    ./configure && \
+    make clean && \
+    make && \
+    make install
 
 FROM php:${PHP_VERSION}-${PHP_VARIANT} as php-armv7
 
@@ -179,18 +183,7 @@ RUN set -eux; \
 
 COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
 
-COPY --chown=www-data:www-data overlay/common/www-data/ /
-
-COPY overlay/common/root/ /
-COPY overlay/debian/root/ /
-
-RUN set -eux; \
-	echo "Include /etc/apache2/mediawiki.conf" >> /etc/apache2/apache2.conf; \
-	chmod 0744 /etc/services.d/*/run /etc/services.d/*/finish; \
-	chmod 0600 /etc/cron.d/backup 
-
-
-COPY --from=dmd /usr/local/bin/onedrive /usr/local/bin/onedrive
+COPY overlay/common/root/install /install
 
 RUN set -eux; \
 	   cd /var/www/html \
@@ -202,5 +195,19 @@ RUN set -eux; \
 	&& /install/bin/extension.sh DynamicPageList targz https://github.com/Universal-Omega/DynamicPageList3/archive/refs/tags/3.3.7.tar.gz \
 	&& /install/bin/extension.sh Widgets extensions \
 	&& /install/bin/extension.sh IFrameTag composer mediawiki/iframe-tag
+
+COPY --chown=www-data:www-data overlay/common/www-data/ /
+
+COPY overlay/common/root/ /
+COPY overlay/debian/root/ /
+
+RUN set -eux; \
+	echo "Include /etc/apache2/mediawiki.conf" >> /etc/apache2/apache2.conf; \
+	chmod 0744 /etc/services.d/*/run /etc/services.d/*/finish; \
+	chmod 0600 /etc/cron.d/backup 
+
+
+COPY --from=onedrive /usr/local/bin/onedrive /usr/local/bin/onedrive
+
 
 ENTRYPOINT ["/overlay/bin/entrypoint.sh"]

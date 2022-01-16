@@ -1,7 +1,6 @@
 #!/bin/bash
 
-CERT_FILE=$(grep SSLCertificateFile /etc/apache2/mediawiki.conf.tpl  | awk '{print $2}')
-if [ ! -e "$CERT_FILE" ]; then
+if [ ! -e "/etc/apache2/mediawiki.conf" ]; then
     [ -z "$SERVER_DOMAIN" ] && read -r -p "Enter the server domain: " SERVER_DOMAIN
     export SERVER_DOMAIN
     cat <<-EOF > /etc/apache2/ssl.csr
@@ -27,10 +26,11 @@ EOF
 $(</etc/apache2/mediawiki.conf.tpl)
 EOF
 " 2> /dev/null > /etc/apache2/mediawiki.conf
-
-    openssl req -new -nodes -x509 -days 36500 -keyout /etc/apache2/ssl.key -out /etc/apache2/ssl.crt -config /etc/apache2/ssl.csr
+	
+	# Self signed certs in case SELF_SIGNED_CERT is on
+	openssl req -new -nodes -x509 -days 36500 -keyout /etc/apache2/ssl.key -out /etc/apache2/ssl.crt -config /etc/apache2/ssl.csr
 
     if [ -z "$SELF_SIGNED_CERT" ]; then 
-        . /overlay/bin/certbot.sh setup
-    fi
+   	    . /overlay/bin/certbot.sh setup || true
+   	fi
 fi
