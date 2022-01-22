@@ -1,1 +1,1 @@
-0 1 * * * root /overlay/bin/certbot.sh renew > /var/run/cron.stdout 2> /var/run/cron.stderr
+0 1 * * * root /overlay/bin/certbot.sh renew > /proc/$(cat /var/run/crond.pid)/fd/1 2> /proc/$(cat /var/run/crond.pid)/fd/2

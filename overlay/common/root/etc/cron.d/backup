@@ -1,1 +1,1 @@
-0 * * * * www-data /overlay/bin/backup.sh backup > /var/run/cron.stdout 2> /var/run/cron.stderr
+0 * * * * www-data /overlay/bin/backup.sh backup > /proc/$(cat /var/run/crond.pid)/fd/1 2> /proc/$(cat /var/run/crond.pid)/fd/2
