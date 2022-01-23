@@ -13,7 +13,7 @@ PHP=/usr/local/bin/php
 function backup() {
     echo "$(date) Running backup"
     $PHP $WIKI_ROOT/maintenance/SqliteMaintenance.php --backup-to $DB_BACKUP
-    $PHP $WIKI_ROOT/maintenance/dumpBackup.php --full --quiet > $BAKCUP_ROOT/dump.xml
+    $PHP $WIKI_ROOT/maintenance/dumpBackup.php --full --quiet > $BACKUP_ROOT/dump.xml
     # [ ! -e $IMAGES_BACKUP ] && mkdir $IMAGES_BACKUP
     # cd $IMAGES_BACKUP
     # $PHP $WIKI_ROOT/maintenance/dumpUploads.php --base=$(pwd) | su -s /usr/bin/xargs www-data -- cp -a -s -u -t .

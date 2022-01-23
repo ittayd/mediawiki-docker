@@ -1,1 +1,2 @@
-0 * * * * www-data /overlay/bin/backup.sh backup > /proc/$(cat /var/run/crond.pid)/fd/1 2> /proc/$(cat /var/run/crond.pid)/fd/2
+# running under root so output can be redirected to cron's output and from there to docker logs
+0 * * * * root su -s /overlay/bin/backup.sh www-data -- backup > /proc/$(cat /var/run/crond.pid)/fd/1 2> /proc/$(cat /var/run/crond.pid)/fd/2

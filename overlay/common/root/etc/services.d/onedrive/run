@@ -9,7 +9,7 @@ function onedrive() {
     VERBOSE="-vvvv"
   fi
 
-  exec su -l www-data -s $(which onedrive) -- $VERBOSE --confdir=$ROOT/.config/onedrive --syncdir=$ROOT/OneDrive --single-directory MediawikiBackup "$@"
+  exec su -s $(which onedrive) www-data -- $VERBOSE --confdir=$ROOT/.config/onedrive --syncdir=$ROOT/OneDrive --single-directory MediawikiBackup "$@"
 }
 
 function setup() {
