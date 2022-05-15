@@ -66,6 +66,7 @@ RUN set -eux; \
 		certbot \
 		git \
 		librsvg2-bin \
+		libnss3 \
 		ghostscript \
 		poppler-utils \
 		imagemagick \
