@@ -41,7 +41,7 @@ $wgCheckFileExtensions = false;
 
 $wgCacheDirectory = "$IP/cache";
 
-$wgExtensionCredits['parserhook']['Scribunto'] = true; # hack to make DataTable2 register its Lua function.
+$wgExtensionCredits['parserhook']['Scribunto'] = array(); # hack to make DataTable2 register its Lua function.
 
 $wgUploadPath = "$wgScriptPath/img_auth.php";
 $wgUploadDirectory = '/var/www/html/../images';
