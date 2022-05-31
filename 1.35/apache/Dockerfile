@@ -66,6 +66,9 @@ RUN set -eux; \
 		certbot \
 		git \
 		librsvg2-bin \
+		libnss3 \
+		ghostscript \
+		poppler-utils \
 		imagemagick \
 		# Required for SyntaxHighlighting
 		python3 \
@@ -93,6 +96,7 @@ RUN set -eux; \
 		mysqli \
 		opcache \
 		zip \
+		calendar \
 	; \
 	\
 	pecl install APCu-5.1.20; \
@@ -148,9 +152,9 @@ RUN set -eux; \
 # Version
 ENV MEDIAWIKI_VERSION_MAJOR 1
 ENV MEDIAWIKI_VERSION_MINOR 35
-ENV MEDIAWIKI_VERSION_PATCH 5
+ENV MEDIAWIKI_VERSION_PATCH 6
 ENV MEDIAWIKI_VERSION_MAIN 1.35
-ENV MEDIAWIKI_VERSION 1.35.5
+ENV MEDIAWIKI_VERSION 1.35.6
 
 # MediaWiki setup
 RUN set -eux; \
@@ -194,7 +198,8 @@ RUN set -eux; \
 	&& /install/bin/extension.sh DataTable2 extensions \
 	&& /install/bin/extension.sh DynamicPageList targz https://github.com/Universal-Omega/DynamicPageList3/archive/refs/tags/3.3.7.tar.gz \
 	&& /install/bin/extension.sh Widgets extensions \
-	&& /install/bin/extension.sh IFrameTag composer mediawiki/iframe-tag
+	&& /install/bin/extension.sh IFrameTag composer mediawiki/iframe-tag \
+	&& /install/bin/extension.sh Drafts extensions  
 
 COPY --chown=www-data:www-data overlay/common/www-data/ /
 
