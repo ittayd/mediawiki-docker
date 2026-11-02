@@ -21,6 +21,9 @@ if [ ! -e "/etc/apache2/mediawiki.conf" ]; then
 	extendedKeyUsage = serverAuth
 EOF
 
+    if [ "$ALLOW_WEB_INSTALLER" = "1" ]; then MW_INSTALLER_ACCESS=granted; else MW_INSTALLER_ACCESS=denied; fi
+    export MW_INSTALLER_ACCESS
+
     # needed since certbot doesn't understand environment variables in the file...
     eval "cat <<EOF
 $(</etc/apache2/mediawiki.conf.tpl)

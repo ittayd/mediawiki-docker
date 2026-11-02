@@ -1,0 +1,7 @@
+.git
+*.sqlite
+*.sqlite-*
+*.xml
+*.xml.gz
+LocalSettings.php
+dev

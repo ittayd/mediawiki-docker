@@ -1,5 +1,6 @@
 ARG PHP_VERSION=%%PHP_VERSION%%
 ARG PHP_VARIANT=%%VARIANT%%
+ARG DEBIAN_SUITE=trixie
 
 # Set vars for s6 overlay
 ARG S6_OVERLAY_VERSION=v2.2.0.3
@@ -7,20 +8,20 @@ ARG S6_OVERLAY_BASE_URL=https://github.com/just-containers/s6-overlay/releases/d
 ARG SOCKLOG_OVERLAY_VERSION=v3.1.2-0
 ARG SOCKLOG_OVERLAY_BASE_URL=https://github.com/just-containers/socklog-overlay/releases/download/${SOCKLOG_OVERLAY_VERSION}
 
+ARG ONEDRIVE_VERSION=v2.5.12
+
 # Multi-stage build - See https://docs.docker.com/engine/userguide/eng-image/multistage-build
 
-# Based on https://github.com/abraunegg/onedrive/blob/master/contrib/docker/Dockerfile-stretch, 
-# PHP is based on debian:bullseye-slim (https://github.com/docker-library/docs/blob/master/php/README.md#supported-tags-and-respective-dockerfile-links)
-FROM debian:stable-slim AS onedrive 
+# Based on https://github.com/abraunegg/onedrive/blob/master/contrib/docker/Dockerfile-debian
+# Must use the same Debian suite as the PHP image, since the binary is copied over.
+FROM debian:${DEBIAN_SUITE}-slim AS onedrive
+ARG ONEDRIVE_VERSION
 
-RUN apt update && \
-    apt install -y build-essential curl libcurl4-openssl-dev libsqlite3-dev pkg-config git wget
+RUN apt-get update && \
+    apt-get install -y --no-install-recommends build-essential ca-certificates curl git ldc \
+        libcurl4-openssl-dev libdbus-1-dev libsqlite3-dev libxml2-dev pkg-config
 
-RUN wget http://downloads.dlang.org/releases/2.x/2.097.0/dmd_2.097.0-0_${TARGETARCH:-amd64}.deb -O /tmp/dmd.deb && \
-    dpkg -i /tmp/dmd.deb && \
-	rm -f /tmp/dmd.deb
-
-RUN git clone --depth 1 --branch v2.4.15 https://github.com/abraunegg/onedrive.git
+RUN git clone --depth 1 --branch ${ONEDRIVE_VERSION} https://github.com/abraunegg/onedrive.git
 
 RUN cd onedrive && \
     ./configure && \
@@ -28,7 +29,7 @@ RUN cd onedrive && \
     make && \
     make install
 
-FROM php:${PHP_VERSION}-${PHP_VARIANT} as php-armv7
+FROM php:${PHP_VERSION}-${PHP_VARIANT}-${DEBIAN_SUITE} as php-armv7
 
 ARG S6_OVERLAY_VERSION
 ARG S6_OVERLAY_BASE_URL
@@ -36,7 +37,7 @@ ENV S6_OVERLAY_RELEASE="${S6_OVERLAY_BASE_URL}/s6-overlay-arm.tar.gz"
 ARG SOCKLOG_OVERLAY_BASE_URL
 ENV SOCKLOG_OVERLAY_RELEASE="${SOCKLOG_OVERLAY_BASE_URL}/socklog-overlay-arm.tar.gz"
 
-FROM php:${PHP_VERSION}-${PHP_VARIANT} as php-amd64
+FROM php:${PHP_VERSION}-${PHP_VARIANT}-${DEBIAN_SUITE} as php-amd64
 
 ARG S6_OVERLAY_BASE_URL
 ENV S6_OVERLAY_RELEASE="${S6_OVERLAY_BASE_URL}/s6-overlay-amd64.tar.gz"
@@ -46,22 +47,30 @@ ENV SOCKLOG_OVERLAY_RELEASE="${SOCKLOG_OVERLAY_BASE_URL}/socklog-overlay-amd64.t
 
 FROM php-${TARGETARCH:-amd64}${TARGETVARIANT}
 
+# Refuse to build on a base image that still has known-vulnerable PHP (e.g. a stale cached php:X.Y tag)
+RUN php -r 'exit(version_compare(PHP_VERSION, "%%PHP_MIN_VERSION%%", "<") ? 1 : 0);' \
+	|| { echo "PHP $(php -r 'echo PHP_VERSION;') is older than %%PHP_MIN_VERSION%%; rebuild with --pull" >&2; exit 1; }
+
+# /bin, /sbin and /lib are symlinks into /usr on this base; without --keep-directory-symlink tar replaces them with directories.
+# The tarball also has a /usr/bin/execlineb -> /bin/execlineb link, which here would overwrite the binary with a link to itself
 ADD ${S6_OVERLAY_RELEASE} /tmp/s6-overlay.tar.gz
 RUN set -eux; \
-    tar xzf /tmp/s6-overlay.tar.gz -C / ; \
-	rm /tmp/s6-overlay.tar.gz
+    tar xzf /tmp/s6-overlay.tar.gz -C / --keep-directory-symlink --exclude=./usr/bin/execlineb; \
+	rm /tmp/s6-overlay.tar.gz; \
+	test -f /usr/bin/execlineb -a ! -L /usr/bin/execlineb
 
 
 # Install socklog-overlay
 ADD ${SOCKLOG_OVERLAY_RELEASE} /tmp/socklog-overlay.tar.gz
 RUN set -eux; \
-	tar xzf /tmp/socklog-overlay.tar.gz -C / ; \
+	tar xzf /tmp/socklog-overlay.tar.gz -C / --keep-directory-symlink; \
 	rm /tmp/socklog-overlay.tar.gz
 
 # System dependencies
 RUN set -eux; \
 	\
 	apt-get update; \
+	apt-get upgrade -y; \
 	apt-get install -y --no-install-recommends \
 		certbot \
 		git \
@@ -74,6 +83,13 @@ RUN set -eux; \
 		python3 \
 		python3-certbot-apache \
 		cron \
+		# Backup validation and publishing
+		sqlite3 \
+		rsync \
+		# Runtime libraries of the onedrive client
+		libsqlite3-0 \
+		libdbus-1-3 \
+		libphobos2-ldc-shared110 \
 	; \
 	rm -rf /var/lib/apt/lists/*
 
@@ -109,9 +125,9 @@ RUN set -eux; \
 	apt-mark auto '.*' > /dev/null; \
 	apt-mark manual $savedAptMark; \
 	ldd "$(php -r 'echo ini_get("extension_dir");')"/*.so \
-		| awk '/=>/ { print $3 }' \
+		| awk '/=>/ { so = $(NF-1); if (index(so, "/usr/local/") == 1) { next }; gsub("^/(usr/)?", "", so); printf "*%s\n", so }' \
 		| sort -u \
-		| xargs -r dpkg-query -S \
+		| xargs -r dpkg-query --search \
 		| cut -d: -f1 \
 		| sort -u \
 		| xargs -rt apt-mark manual; \
@@ -127,7 +143,13 @@ RUN { \
 		echo 'opcache.interned_strings_buffer=8'; \
 		echo 'opcache.max_accelerated_files=4000'; \
 		echo 'opcache.revalidate_freq=60'; \
-	} > /usr/local/etc/php/conf.d/opcache-recommended.ini
+	} > /usr/local/etc/php/conf.d/opcache-recommended.ini; \
+	{ \
+		echo 'expose_php = Off'; \
+		echo 'allow_url_include = Off'; \
+		echo 'display_errors = Off'; \
+		echo 'log_errors = On'; \
+	} > /usr/local/etc/php/conf.d/security.ini
 
 # SQLite Directory Setup
 RUN set -eux; \
@@ -159,43 +181,66 @@ RUN set -eux; \
 		441276E9CCD15F44F6D97D18C119E1A64D70938E \
 		F7F780D82EBFB8A56556E7EE82403E59F9F8CD79 \
 		1D98867E82982C8FE0ABC25F9B69B3109D3BB7B0 \
+		E059C034E7A430583C252F4AA8F734246D73B586 \
+		7759DE19A22260232F251342FC4D45E75D14112B \
 	; \
 	gpg --batch --verify mediawiki.tar.gz.sig mediawiki.tar.gz; \
-	su -s /bin/tar www-data -- -x --strip-components=1 -f mediawiki.tar.gz; \
+	tar -x --strip-components=1 --no-same-owner --no-same-permissions -f mediawiki.tar.gz; \
 	gpgconf --kill all; \
 	rm -r "$GNUPGHOME" mediawiki.tar.gz.sig mediawiki.tar.gz; \
-	# chown -R www-data:www-data extensions skins cache images; \
 	a2enmod ssl; \
 	\
 	apt-get purge -y --auto-remove -o APT::AutoRemove::RecommendsImportant=false $fetchDeps; \
 	rm -rf /var/lib/apt/lists/*
 
-COPY --from=composer:2.1.14 /usr/bin/composer /usr/local/bin/composer
+COPY --from=composer:2 /usr/bin/composer /usr/local/bin/composer
 
 COPY overlay/common/root/install /install
 
 RUN set -eux; \
-	   cd /var/www/html \
-	&& ls -la \   
-	&& /install/bin/extension.sh SubPageList composer mediawiki/sub-page-list \
+	   chmod 0755 /install/bin/*.sh \
+	&& cd /var/www/html \
+	# The release bundles these extensions' libraries without listing them in composer.json, so composer would remove them
+	&& echo '{"extra":{"merge-plugin":{"include":["extensions/AbuseFilter/composer.json","extensions/OATHAuth/composer.json"]}}}' > composer.local.json \
+	&& /install/bin/extension.sh SubPageList composer mediawiki/sub-page-list --update-no-dev \
 	&& /install/bin/extension.sh MobileFrontend extensions \
 	&& /install/bin/extension.sh MinervaNeue skins \
 	&& /install/bin/extension.sh DataTable2 extensions \
-	&& /install/bin/extension.sh DynamicPageList targz https://github.com/Universal-Omega/DynamicPageList3/archive/refs/tags/3.3.7.tar.gz \
+	&& /install/bin/extension.sh DynamicPageList targz https://github.com/Universal-Omega/DynamicPageList3/archive/refs/tags/3.6.4.tar.gz \
 	&& /install/bin/extension.sh Widgets extensions \
-	&& /install/bin/extension.sh IFrameTag composer mediawiki/iframe-tag \
-	&& /install/bin/extension.sh Drafts extensions  
+	# IFrameTag is unmaintained and pins composer/installers 1.x; downgrade only that plugin, since a full
+	# dependency update removes libraries bundled for AbuseFilter and OATHAuth
+	&& /install/bin/extension.sh IFrameTag composer mediawiki/iframe-tag composer/installers:^1.12 --update-no-dev \
+	&& /install/bin/extension.sh Drafts extensions
 
-COPY --chown=www-data:www-data overlay/common/www-data/ /
+# The backup uploader runs as its own user so code running as www-data can't read the OneDrive token
+RUN set -eux; \
+	useradd --system --create-home --home-dir /home/onedrive --shell /usr/sbin/nologin onedrive; \
+	install -d -o www-data -g onedrive -m 2750 /var/backups/wiki-staging; \
+	install -d -o root -g www-data -m 0750 /var/www/config
+
+COPY overlay/common/www-data/var/www/html/ /var/www/html/
+COPY --chown=onedrive:onedrive overlay/common/onedrive/home/onedrive/ /home/onedrive/
 
 COPY overlay/common/root/ /
-COPY overlay/debian/root/ /
 
+# Code is owned by root so a compromised PHP process can't plant a persistent backdoor in it.
+# Only the directories MediaWiki and its extensions write to at runtime stay writable.
 RUN set -eux; \
+	# Files COPYed from a Windows checkout arrive world-writable (including /etc and /etc/cron.d), and the base image
+	# makes /var/www/html 1777; either would let www-data escalate to root or modify code.
+	# Each file changed here is copied into a new layer, so keep the earlier steps from creating writable files.
+	find / -xdev \( -path /proc -o -path /sys -o -path /dev -o -path /tmp -o -path /var/tmp -o -path /run -o -path /var/lock \) -prune \
+		-o -perm /022 ! -type l -exec chmod go-w {} +; \
+	chown root:root /var/www/html; \
+	chmod 0755 /var/www/html; \
+	chmod 0700 /home/onedrive; \
+	mkdir -p /var/www/html/extensions/Widgets/compiled_templates; \
+	chown -R www-data:www-data /var/www/html/cache /var/www/html/extensions/Widgets/compiled_templates; \
 	echo "Include /etc/apache2/mediawiki.conf" >> /etc/apache2/apache2.conf; \
 	chmod 0744 /etc/services.d/*/run /etc/services.d/*/finish; \
-	chmod 0600 /etc/cron.d/backup 
-
+	chmod 0755 /overlay/bin/*.sh; \
+	chmod 0600 /etc/cron.d/backup
 
 COPY --from=onedrive /usr/local/bin/onedrive /usr/local/bin/onedrive
 

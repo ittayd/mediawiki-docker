@@ -1,2 +1,3 @@
-# running under root so output can be redirected to cron's output and from there to docker logs
-0 * * * * root su -s /overlay/bin/backup.sh www-data -- backup > /proc/$(cat /var/run/crond.pid)/fd/1 2> /proc/$(cat /var/run/crond.pid)/fd/2
+# running under root so output can be redirected to cron's output and from there to docker logs.
+# backup.sh switches to the www-data and onedrive users itself; with-contenv passes HEALTHCHECK_URL and friends.
+0 * * * * root cd / && /usr/bin/with-contenv /overlay/bin/backup.sh run > /proc/$(cat /var/run/crond.pid)/fd/1 2> /proc/$(cat /var/run/crond.pid)/fd/2

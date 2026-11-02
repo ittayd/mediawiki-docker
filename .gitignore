@@ -1,0 +1,9 @@
+# Wiki data copied in for local testing must never be committed
+*.sqlite
+*.sqlite-*
+*.xml
+*.xml.gz
+LocalSettings.php
+
+# Copyrighted image, kept out of the public repository; copied into the image when present
+overlay/common/www-data/var/www/html/resources/assets/wiki.png

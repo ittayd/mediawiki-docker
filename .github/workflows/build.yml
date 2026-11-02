@@ -5,6 +5,9 @@ on:
   push:
     branches:
       - master
+  schedule:
+    # Weekly rebuild picks up PHP and Debian security patches in the base image
+    - cron: '0 4 * * 1'
 
 jobs:
 
@@ -14,9 +17,9 @@ jobs:
 
     strategy:
       matrix:
-        version: ['1.31', '1.35', '1.36']
-        type: [apache, fpm, fpm-alpine]
+        version: ['1.43']
+        type: [apache]
 
     steps:
-    - uses: actions/checkout@v1
-    - run: docker build ./${{ matrix.version }}/${{ matrix.type }}
+    - uses: actions/checkout@v4
+    - run: docker build --pull -f ./${{ matrix.version }}/${{ matrix.type }}/Dockerfile .

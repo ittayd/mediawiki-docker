@@ -2,6 +2,15 @@
 # NOTE: this limit is also enforced by php's limits, see /etc/php.ini
 LimitRequestBody 220200960
 
+ServerTokens Prod
+ServerSignature Off
+TraceEnable Off
+
+# Never serve configuration, database, backup or log files, nor dotfiles, even if one ends up in the web root
+<FilesMatch "(?i)(\.(ini|sqlite|sqlite3|db|sql|bak|old|orig|swp|log|lock|sh)|~)$|^\.|^composer\.(json|lock)$">
+  Require all denied
+</FilesMatch>
+
 # Support for SSL, redirect HTTP to HTTPS and place in SSL stuff.
 <IfModule ssl_module>
   <VirtualHost *:80>
@@ -44,6 +53,11 @@ LimitRequestBody 220200960
   php_admin_flag engine off
 </Directory>
 
+# Until LocalSettings.php exists, the web installer lets anyone set up the wiki
+<Directory /var/www/html/mw-config/>
+  Require all ${MW_INSTALLER_ACCESS}
+</Directory>
+
 # Protect risky directory from abuse
 <Directory /var/www/html/cache/>
   Deny from all
@@ -64,6 +78,9 @@ LimitRequestBody 220200960
   Deny from all
 </Directory>
 <Directory /var/www/html/tests/>
+  Deny from all
+</Directory>
+<Directory /var/www/html/vendor/>
   Deny from all
 </Directory>
 <Directory /var/www/html/tests/qunit/>

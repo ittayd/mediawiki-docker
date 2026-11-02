@@ -8,7 +8,7 @@ $wgForceHTTPS = true;
 # need to be to an IP that is used to externally reach the container. if 127.0.0.1 is used, it will resolve internally and will not work
 $wgServer = str_ireplace( 'http://', 'https://', $wgServer );
 
-$ini = parse_ini_file("ExtraLocalConfig.ini");
+$ini = parse_ini_file("/var/www/config/ExtraLocalConfig.ini");
 if ($ini['smtp_user'] == 'foo@bar.com') {
     throw new Exception('ExtraLocalConfig.ini has default values');
 }

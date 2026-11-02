@@ -1,10 +1,14 @@
 #! /bin/bash
 
-INI=/var/www/html/ExtraLocalConfig.ini
+# Kept outside the web root so Apache can never serve it
+INI=/var/www/config/ExtraLocalConfig.ini
 if [ ! -e "$INI" ]; then
 
-    [ -z "$SMTP_USER" ] && read -r -p "Enter google email username: " SMTP_USER
-    [ -z "$SMTP_PASS" ] && read -r -s -p "Enter google email password: " SMTP_PASS
+    while [[ "$SMTP_USER" != *@*.* ]]; do
+        read -r -p "Enter the full Gmail address the wiki sends mail from (e.g. wiki@example.com): " SMTP_USER
+    done
+    [ -z "$SMTP_PASS" ] && read -r -s -p "Enter that account's Google app password (not the account password): " SMTP_PASS
+    echo
 
     export SMTP_USER
     export SMTP_PASS
@@ -12,6 +16,8 @@ if [ ! -e "$INI" ]; then
 smtp_user = '$SMTP_USER'
 smtp_pass = '$SMTP_PASS'
 EOF
+    chown root:www-data $INI
+    chmod 0640 $INI
 fi
 
 function wait_file() {
