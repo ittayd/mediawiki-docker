@@ -1,0 +1,3 @@
+# Everything here ends up in a Linux image; CRLF breaks shell scripts and cron files
+* text=auto eol=lf
+*.png binary
